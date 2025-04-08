@@ -6,6 +6,7 @@ import { CoachingOptions } from "@/services/Options";
 import { useUser } from "@stackframe/stack";
 import Image from "next/image";
 import React from "react";
+import UserInputDialog from "./UserInputDialog";
 
 const FeatureAssistants = () => {
   const user = useUser();
@@ -29,14 +30,20 @@ const FeatureAssistants = () => {
             <div
               key={index}
               className="p-3 bg-secondary rounded-3xl flex flex-col justify-center items-center">
-              <Image
-                src={option.icon}
-                alt={option.name}
-                width={150}
-                height={150}
-                className="h-[70px] w-[70px] hover:rotate-12 cursor-pointer transition-all duration-300"
-              />
-              <h2 className="mt-2">{option.name}</h2>
+              <UserInputDialog coachingOption={option}>
+                <div
+                  key={index}
+                  className="flex flex-col items-center justify-center">
+                  <Image
+                    src={option?.icon}
+                    alt={option?.name}
+                    width={150}
+                    height={150}
+                    className="h-[70px] w-[70px] hover:rotate-12 cursor-pointer transition-all duration-300"
+                  />
+                  <h2 className="mt-2">{option?.name}</h2>
+                </div>
+              </UserInputDialog>
             </div>
           </BlurFade>
         ))}

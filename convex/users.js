@@ -6,6 +6,7 @@ export const CreateUser = mutation({
     name: v.string(),
     email: v.string(),
   },
+  
   handler: async (ctx, args) => {
     // if user already exists
     const userData = await ctx.db
