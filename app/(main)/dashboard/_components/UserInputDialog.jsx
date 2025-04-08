@@ -15,12 +15,15 @@ import { Button } from "@/components/ui/button";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { LoaderCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const UserInputDialog = ({ children, coachingOption }) => {
+  const router = useRouter();
   const [selectedExpert, setSelectedExpert] = useState();
   const [topic, setTopic] = useState();
   const createDiscussionRoom = useMutation(api.DiscussionRoom.CreateNewRoom);
   const [loading, setLoading] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
 
   const onClickNext = async () => {
     setLoading(true);
@@ -33,10 +36,12 @@ const UserInputDialog = ({ children, coachingOption }) => {
     console.log("result", result);
 
     setLoading(false);
+    setOpenDialog(false);
+    router.push("/discussion-room/" + result);
   };
 
   return (
-    <Dialog>
+    <Dialog open={openDialog} onOpenChange={setOpenDialog}>
       <DialogTrigger>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
