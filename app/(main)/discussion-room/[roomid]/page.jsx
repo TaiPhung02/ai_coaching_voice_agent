@@ -2,12 +2,17 @@
 
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
+import { getToken } from "@/services/GlobalServices";
 import { CoachingExpert } from "@/services/Options";
 import { UserButton } from "@stackframe/stack";
+import { RealtimeTranscriber } from "assemblyai";
 import { useQuery } from "convex/react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import RecordRTC from "recordrtc";
+// import dynamic from "next/dynamic";
+// const RecordRTC = dynamic(() => import("recordrtc"), { ssr: false });
 
 const DiscussionRoom = () => {
   const { roomid } = useParams();
@@ -15,6 +20,13 @@ const DiscussionRoom = () => {
     id: roomid,
   });
   const [expert, setExpert] = useState();
+  const [enableMic, setEnableMic] = useState(false);
+  const recorder = useRef(null);
+  const realtimeTranscriber = useRef(null);
+  const [transcribe, setTranscribe] = useState();
+  const [conversation, setConversation] = useState([]);
+  let silenceTimeout;
+  let texts = {};
 
   useEffect(() => {
     if (DiscussionRoomData) {
@@ -25,6 +37,90 @@ const DiscussionRoom = () => {
       setExpert(Expert);
     }
   }, [DiscussionRoomData]);
+
+  const connectToServer = async () => {
+    setEnableMic(true);
+
+    // Init Assembly AI
+    realtimeTranscriber.current = new RealtimeTranscriber({
+      token: await getToken(),
+      sampleRate: 16_000,
+    });
+
+    realtimeTranscriber.current.on("transcript", async (transcript) => {
+      console.log("transcript", transcript);
+      let msg = "";
+
+      if (transcript.message_type === "FinalTranscript") {
+        setConversation((prev) => [
+          ...prev,
+          {
+            role: "user",
+            content: transcript.text,
+          },
+        ]);
+      }
+
+      texts[transcript.audio_start] = transcript?.text;
+      const keys = Object.keys(texts);
+      keys.sort((a, b) => a - b);
+
+      for (const key of keys) {
+        if (texts[key]) {
+          msg += `${texts[key]} `;
+        }
+
+        setTranscribe(msg);
+      }
+    });
+
+    await realtimeTranscriber.current.connect();
+
+    if (typeof window !== "undefined" && typeof navigator !== "undefined") {
+      navigator.mediaDevices
+        .getUserMedia({ audio: true })
+        .then((stream) => {
+          recorder.current = new RecordRTC(stream, {
+            type: "audio",
+            mimeType: "audio/webm;codecs=pcm",
+            recorderType: RecordRTC.StereoAudioRecorder,
+            timeSlice: 250,
+            desiredSampRate: 16000,
+            numberOfAudioChannels: 1,
+            bufferSize: 4096,
+            audioBitsPerSecond: 128000,
+            ondataavailable: async (blob) => {
+              if (!realtimeTranscriber.current) return;
+              // Reset the silence detection timer on audio input
+              clearTimeout(silenceTimeout);
+
+              const buffer = await blob.arrayBuffer();
+              console.log("buffer", buffer);
+              realtimeTranscriber.current.sendAudio(buffer);
+
+              //console.log(buffer)
+
+              // Restart the silence detection timer
+              silenceTimeout = setTimeout(() => {
+                console.log("User stopped talking");
+                // Handle user stopped talking (e.g., send final transcript, stop recording, etc.)
+              }, 2000);
+            },
+          });
+          recorder.current.startRecording();
+        })
+        .catch((err) => console.error(err));
+    }
+  };
+
+  const disconnect = async (e) => {
+    e.preventDefault();
+
+    await realtimeTranscriber.current.close();
+    recorder.current.pauseRecording();
+    recorder.current = null;
+    setEnableMic(false);
+  };
 
   return (
     <div className="-mt-12">
@@ -50,7 +146,13 @@ const DiscussionRoom = () => {
           </div>
 
           <div className="mt-5 flex items-center justify-center">
-            <Button>Connect</Button>
+            {!enableMic ? (
+              <Button onClick={connectToServer}>Connect</Button>
+            ) : (
+              <Button variant="destructive" onClick={disconnect}>
+                Disconnect
+              </Button>
+            )}
           </div>
         </div>
 
@@ -64,6 +166,10 @@ const DiscussionRoom = () => {
             from your conversation
           </h2>
         </div>
+      </div>
+
+      <div>
+        <h2>{transcribe}</h2>
       </div>
     </div>
   );
