@@ -20,7 +20,7 @@ export const AIModel = async (topic, coachingOption, lastTwoConversation) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "deepseek/deepseek-v3-base:free",
+        model: process.env.OPENROUTER_MODEL,
         messages: [
           { role: "assistant", content: PROMPT },
           ...lastTwoConversation,
@@ -31,22 +31,57 @@ export const AIModel = async (topic, coachingOption, lastTwoConversation) => {
     const completion = await response.json();
     console.log("API Response:", completion); // Debugging
 
-    if (completion.error) {
-      const errorMessage = completion.error.message || "Unknown API error";
-      console.error("AI API Error Details:", completion.error);
+    if (completion?.error) {
+      const errorMessage = completion?.error.message || "Unknown API error";
+      console.error("AI API Error Details:", completion?.error);
       throw new Error(`AI Error: ${errorMessage}`);
     }
 
-    return completion.choices[0].message;
+    return completion?.choices?.[0].message;
   } catch (error) {
     console.error("Request Failed:", error);
     throw new Error(`Request failed: ${error.message}`);
   }
 };
 
+export const AIModelToGenerateFeedbackAndNotes = async (
+  coachingOption,
+  conversation
+) => {
+  const selectedOption = coachingOption || CoachingOptions[0]?.name;
+  const option = CoachingOptions.find((item) => item.name === selectedOption);
+
+  if (!option) throw new Error(`Coaching option "${selectedOption}" not found`);
+
+  const PROMPT = option?.summeryPrompt;
+
+  try {
+    const response = await fetch("/api/openrouter", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: process.env.OPENROUTER_MODEL,
+        messages: [...conversation, { role: "assistant", content: PROMPT }],
+      }),
+    });
+
+    const completion = await response.json();
+    console.log("API Response:", completion); // Debugging
+
+    if (completion?.error) {
+      const errorMessage = completion?.error.message || "Unknown API error";
+      console.error("AI API Error Details:", completion?.error);
+      throw new Error(`AI Error: ${errorMessage}`);
+    }
+
+    return completion?.choices?.[0].message;
+  } catch (error) {
+    console.error("Request Failed:", error);
+    throw new Error(`Request failed: ${error?.message}`);
+  }
+};
+
 export const ConvertTextToSpeech = async (text, expertName) => {
-  console.log("text", text)
-  console.log("expertName", expertName)
   const pollyClient = new PollyClient({
     region: "ap-southeast-1",
     credentials: {
@@ -56,7 +91,7 @@ export const ConvertTextToSpeech = async (text, expertName) => {
   });
 
   const command = new SynthesizeSpeechCommand({
-    Text: text,
+    Text: text || "Hello, How are you?",
     OutputFormat: "mp3",
     VoiceId: expertName || "Joanna",
   });

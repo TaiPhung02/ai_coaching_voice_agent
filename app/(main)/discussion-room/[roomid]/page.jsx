@@ -17,6 +17,7 @@ import { useParams } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import RecordRTC from "recordrtc";
 import ChatBox from "./_components/ChatBox";
+import { toast } from "sonner";
 // import dynamic from "next/dynamic";
 // const RecordRTC = dynamic(() => import("recordrtc"), { ssr: false });
 
@@ -34,6 +35,7 @@ const DiscussionRoom = () => {
   const [audioUrl, setAudioUrl] = useState();
   const [loading, setLoading] = useState(false);
   const UpdateConversation = useMutation(api.DiscussionRoom.UpdateConversation);
+  const [enableFeedbackNotes, setEnableFeedbackNotes] = useState(false);
 
   let silenceTimeout;
   let texts = {};
@@ -49,7 +51,6 @@ const DiscussionRoom = () => {
 
   const connectToServer = async () => {
     setLoading(true);
-    setEnableMic(true);
 
     // Init Assembly AI
     realtimeTranscriber.current = new RealtimeTranscriber({
@@ -98,6 +99,8 @@ const DiscussionRoom = () => {
 
     await realtimeTranscriber.current.connect();
     setLoading(false);
+    setEnableMic(true);
+    toast("Connected...");
 
     if (typeof window !== "undefined" && typeof navigator !== "undefined") {
       navigator.mediaDevices
@@ -138,7 +141,7 @@ const DiscussionRoom = () => {
 
   useEffect(() => {
     async function fetchData() {
-      if (conversation[conversation.length - 1].role === "user") {
+      if (conversation[conversation.length - 1]?.role === "user") {
         // Calling AI text Model to Get Response
         const lastTwoMsg = conversation.slice(-2);
 
@@ -170,14 +173,16 @@ const DiscussionRoom = () => {
     await realtimeTranscriber.current.close();
     recorder.current.pauseRecording();
     recorder.current = null;
+    setEnableMic(false);
+    toast("Disconnected...");
 
     await UpdateConversation({
       id: DiscussionRoomData?._id,
       conversation: conversation,
     });
 
-    setEnableMic(false);
     setLoading(false);
+    setEnableFeedbackNotes(true);
   };
 
   return (
@@ -224,7 +229,11 @@ const DiscussionRoom = () => {
         </div>
 
         <div>
-          <ChatBox conversation={conversation} />
+          <ChatBox
+            conversation={conversation}
+            enableFeedbackNotes={enableFeedbackNotes}
+            coachingOption={DiscussionRoomData?.coachingOption}
+          />
         </div>
       </div>
 

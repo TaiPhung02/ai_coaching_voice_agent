@@ -17,7 +17,7 @@ export async function POST(request) {
         "X-Title": "Discussion Room Application",
       },
       data: {
-        model: body.model || "deepseek/deepseek-v3-base:free",
+        model: body.model || process.env.OPENROUTER_MODEL,
         messages: body.messages,
         // Adding a timeout to prevent long-hanging requests
         timeout: 60000, // 60 seconds timeout
