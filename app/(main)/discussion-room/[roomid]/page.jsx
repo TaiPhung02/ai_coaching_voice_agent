@@ -12,6 +12,7 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import RecordRTC from "recordrtc";
+import ChatBox from "./_components/ChatBox";
 // import dynamic from "next/dynamic";
 // const RecordRTC = dynamic(() => import("recordrtc"), { ssr: false });
 
@@ -25,7 +26,16 @@ const DiscussionRoom = () => {
   const recorder = useRef(null);
   const realtimeTranscriber = useRef(null);
   const [transcribe, setTranscribe] = useState();
-  const [conversation, setConversation] = useState([]);
+  const [conversation, setConversation] = useState([
+    {
+      role: "assistant",
+      content: "Hello, how can I help you today?",
+    },
+    {
+      role: "user",
+      content: "Hi",
+    },
+  ]);
   const [loading, setLoading] = useState(false);
   let silenceTimeout;
   let texts = {};
@@ -63,10 +73,12 @@ const DiscussionRoom = () => {
         ]);
 
         // Calling AI text Model to Get Response
+        const lastTwoMsg = conversation.slice(-2);
+
         const aiRes = await AIModel(
           DiscussionRoomData?.topic,
           DiscussionRoomData?.coachingOption,
-          transcript.text
+          lastTwoMsg
         );
 
         console.log("aiRes", aiRes);
@@ -126,6 +138,26 @@ const DiscussionRoom = () => {
     }
   };
 
+  useEffect(() => {
+    async function fetchData() {
+      if (conversation[conversation.length - 1].role === "user") {
+        // Calling AI text Model to Get Response
+        const lastTwoMsg = conversation.slice(-2);
+
+        const aiRes = await AIModel(
+          DiscussionRoomData?.topic,
+          DiscussionRoomData?.coachingOption,
+          lastTwoMsg
+        );
+
+        console.log("aiRes", aiRes);
+        setConversation((prev) => [...prev, aiRes]);
+      }
+    }
+
+    fetchData();
+  }, [conversation]);
+
   const disconnect = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -179,14 +211,7 @@ const DiscussionRoom = () => {
         </div>
 
         <div>
-          <div className="h-[60vh] bg-secondary border rounded-4xl flex flex-col items-center justify-center relative">
-            <h2>Chat Section</h2>
-          </div>
-
-          <h2 className="mt-5 text-gray-400 text-sm">
-            At the end of your conversation we will automatically feedback/notes
-            from your conversation
-          </h2>
+          <ChatBox conversation={conversation} />
         </div>
       </div>
 

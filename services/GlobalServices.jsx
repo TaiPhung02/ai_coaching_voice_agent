@@ -6,35 +6,39 @@ export const getToken = async () => {
   return result.data;
 };
 
-export const AIModel = async (topic, coachingOption, msg) => {
-  const option = CoachingOptions.find((item) => item.name === coachingOption);
+export const AIModel = async (topic, coachingOption, lastTwoConversation) => {
+  const selectedOption = coachingOption || CoachingOptions[0]?.name;
+  const option = CoachingOptions.find((item) => item.name === selectedOption);
+
+  if (!option) throw new Error(`Coaching option "${selectedOption}" not found`);
+
   const PROMPT = option.prompt.replace("{user_topic}", topic);
 
   try {
     const response = await fetch("/api/openrouter", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "deepseek/deepseek-v3-base:free",
         messages: [
           { role: "assistant", content: PROMPT },
-          { role: "user", content: msg },
+          ...lastTwoConversation,
         ],
       }),
     });
 
     const completion = await response.json();
+    console.log("API Response:", completion); // Debugging
 
     if (completion.error) {
-      throw new Error(completion.error);
+      const errorMessage = completion.error.message || "Unknown API error";
+      console.error("AI API Error Details:", completion.error);
+      throw new Error(`AI Error: ${errorMessage}`);
     }
 
-    console.log(completion.choices[0].message);
     return completion.choices[0].message;
   } catch (error) {
-    console.error("Error calling AI model:", error);
-    throw error;
+    console.error("Request Failed:", error);
+    throw new Error(`Request failed: ${error.message}`);
   }
 };

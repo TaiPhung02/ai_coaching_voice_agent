@@ -25,6 +25,7 @@
     "react-dom": "^18.0.0",
     "recordrtc": "^5.5.1",
     "tailwind-merge": "^3.1.0",
+    "tailwind-scrollbar-hide": "^2.0.0",
     "tw-animate-css": "^1.2.5"
   },
   "devDependencies": {
