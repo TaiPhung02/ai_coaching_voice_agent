@@ -2,11 +2,12 @@
 
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
-import { getToken } from "@/services/GlobalServices";
+import { AIModel, getToken } from "@/services/GlobalServices";
 import { CoachingExpert } from "@/services/Options";
 import { UserButton } from "@stackframe/stack";
 import { RealtimeTranscriber } from "assemblyai";
 import { useQuery } from "convex/react";
+import { LoaderCircle } from "lucide-react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
@@ -25,6 +26,7 @@ const DiscussionRoom = () => {
   const realtimeTranscriber = useRef(null);
   const [transcribe, setTranscribe] = useState();
   const [conversation, setConversation] = useState([]);
+  const [loading, setLoading] = useState(false);
   let silenceTimeout;
   let texts = {};
 
@@ -33,12 +35,12 @@ const DiscussionRoom = () => {
       const Expert = CoachingExpert.find(
         (item) => item.name === DiscussionRoomData?.expertName
       );
-      console.log("Expert", Expert);
       setExpert(Expert);
     }
   }, [DiscussionRoomData]);
 
   const connectToServer = async () => {
+    setLoading(true);
     setEnableMic(true);
 
     // Init Assembly AI
@@ -48,7 +50,7 @@ const DiscussionRoom = () => {
     });
 
     realtimeTranscriber.current.on("transcript", async (transcript) => {
-      console.log("transcript", transcript);
+      // console.log("transcript", transcript);
       let msg = "";
 
       if (transcript.message_type === "FinalTranscript") {
@@ -59,6 +61,16 @@ const DiscussionRoom = () => {
             content: transcript.text,
           },
         ]);
+
+        // Calling AI text Model to Get Response
+        const aiRes = await AIModel(
+          DiscussionRoomData?.topic,
+          DiscussionRoomData?.coachingOption,
+          transcript.text
+        );
+
+        console.log("aiRes", aiRes);
+        setConversation((prev) => [...prev, aiRes]);
       }
 
       texts[transcript.audio_start] = transcript?.text;
@@ -75,6 +87,7 @@ const DiscussionRoom = () => {
     });
 
     await realtimeTranscriber.current.connect();
+    setLoading(false);
 
     if (typeof window !== "undefined" && typeof navigator !== "undefined") {
       navigator.mediaDevices
@@ -95,7 +108,7 @@ const DiscussionRoom = () => {
               clearTimeout(silenceTimeout);
 
               const buffer = await blob.arrayBuffer();
-              console.log("buffer", buffer);
+              // console.log("buffer", buffer);
               realtimeTranscriber.current.sendAudio(buffer);
 
               //console.log(buffer)
@@ -115,11 +128,14 @@ const DiscussionRoom = () => {
 
   const disconnect = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     await realtimeTranscriber.current.close();
     recorder.current.pauseRecording();
     recorder.current = null;
+
     setEnableMic(false);
+    setLoading(false);
   };
 
   return (
@@ -147,9 +163,15 @@ const DiscussionRoom = () => {
 
           <div className="mt-5 flex items-center justify-center">
             {!enableMic ? (
-              <Button onClick={connectToServer}>Connect</Button>
+              <Button onClick={connectToServer} disabled={loading}>
+                {loading && <LoaderCircle className="animate-spin" />} Connect
+              </Button>
             ) : (
-              <Button variant="destructive" onClick={disconnect}>
+              <Button
+                variant="destructive"
+                onClick={disconnect}
+                disabled={loading}>
+                {loading && <LoaderCircle className="animate-spin" />}{" "}
                 Disconnect
               </Button>
             )}
