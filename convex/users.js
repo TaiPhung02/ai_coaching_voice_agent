@@ -6,7 +6,7 @@ export const CreateUser = mutation({
     name: v.string(),
     email: v.string(),
   },
-  
+
   handler: async (ctx, args) => {
     // if user already exists
     const userData = await ctx.db
@@ -30,5 +30,18 @@ export const CreateUser = mutation({
     }
 
     return userData[0];
+  },
+});
+
+export const UpdateUserToken = mutation({
+  args: {
+    id: v.id("users"),
+    credits: v.number(),
+  },
+
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      credits: args.credits,
+    });
   },
 });
