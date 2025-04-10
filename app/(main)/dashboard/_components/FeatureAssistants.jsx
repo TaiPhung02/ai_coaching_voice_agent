@@ -7,6 +7,7 @@ import { useUser } from "@stackframe/stack";
 import Image from "next/image";
 import React from "react";
 import UserInputDialog from "./UserInputDialog";
+import ProfileDialog from "./ProfileDialog";
 
 const FeatureAssistants = () => {
   const user = useUser();
@@ -21,7 +22,9 @@ const FeatureAssistants = () => {
           </h2>
         </div>
 
-        <Button>Profile</Button>
+        <ProfileDialog>
+          <Button>Profile</Button>
+        </ProfileDialog>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 xl:grid-cols-5 gap-10 mt-10">

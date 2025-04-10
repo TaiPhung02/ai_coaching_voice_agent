@@ -8,7 +8,7 @@ import {
   getToken,
 } from "@/services/GlobalServices";
 import { CoachingExpert } from "@/services/Options";
-import { UserButton } from "@stackframe/stack";
+import { UserButton, useUser } from "@stackframe/stack";
 import { RealtimeTranscriber } from "assemblyai";
 import { useMutation, useQuery } from "convex/react";
 import { LoaderCircle } from "lucide-react";
@@ -23,6 +23,7 @@ import { UserContext } from "@/app/_context/UserContext";
 // const RecordRTC = dynamic(() => import("recordrtc"), { ssr: false });
 
 const DiscussionRoom = () => {
+  const user = useUser();
   const { roomid } = useParams();
   const { userData, setUserData } = useContext(UserContext);
   const DiscussionRoomData = useQuery(api.DiscussionRoom.GetDiscussionRoom, {
@@ -216,7 +217,13 @@ const DiscussionRoom = () => {
             <audio src={audioUrl} type="audio/mp3" autoPlay />
 
             <div className="p-5 bg-gray-200 px-10 rounded-lg absolute bottom-10 right-10">
-              <UserButton />
+              <Image
+                src={user?.profileImageUrl}
+                alt="Profile Picture"
+                width={60}
+                height={60}
+                className="rounded-full"
+              />
             </div>
           </div>
 
