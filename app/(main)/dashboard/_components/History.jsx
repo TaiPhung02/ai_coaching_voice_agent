@@ -7,6 +7,7 @@ import { CoachingOptions } from "@/services/Options";
 import { useConvex } from "convex/react";
 import moment from "moment";
 import Image from "next/image";
+import Link from "next/link";
 import React, { useContext, useEffect, useState } from "react";
 
 const History = () => {
@@ -52,8 +53,7 @@ const History = () => {
               item?.coachingOption == "Learn Language") && (
               <div
                 key={index}
-                className="border-b-[1px] pb-3 mb-4 group flex justify-between items-center cursor-pointer"
-              >
+                className="border-b-[1px] pb-3 mb-4 group flex justify-between items-center cursor-pointer">
                 <div className="flex gap-7 items-center">
                   <Image
                     src={GetAbstractImages(item?.coachingOption)}
@@ -72,12 +72,13 @@ const History = () => {
                   </div>
                 </div>
 
-                <Button
-                  variant="outline"
-                  className="invisible group-hover:visible"
-                >
-                  View Notes
-                </Button>
+                <Link href={`/view-summery/${item?._id}`}>
+                  <Button
+                    variant="outline"
+                    className="invisible group-hover:visible">
+                    View Notes
+                  </Button>
+                </Link>
               </div>
             )
         )}

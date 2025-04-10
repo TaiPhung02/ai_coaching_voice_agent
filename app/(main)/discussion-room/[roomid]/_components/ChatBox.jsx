@@ -58,10 +58,7 @@ const ChatBox = ({ conversation, enableFeedbackNotes, coachingOption }) => {
       </div>
 
       {!enableFeedbackNotes ? (
-        <h2 className="mt-5 text-gray-400 text-sm">
-          At the end of your conversation we will automatically feedback/notes
-          from your conversation
-        </h2>
+        <h2 className="mt-5 text-gray-400 text-sm"></h2>
       ) : (
         <Button
           onClick={GenerateFeedbackAndNotes}
